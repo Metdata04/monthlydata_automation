@@ -1,0 +1,44 @@
+name: Download PDF and Upload to Monthlydata Folder
+
+on:
+  schedule:
+    - cron: '0 0 10 * *'  #Every month 15th day 12am in SLT
+  workflow_dispatch:
+
+jobs:
+  download-pdf:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python environment
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests beautifulsoup4
+
+    - name: Create monthlydata folder
+      run: mkdir -p metdata  # Ensure the folder is created before running the script
+
+    - name: Run script to download the PDF
+      run: python main.py
+
+    - name: Get current date
+      id: date
+      run: echo "::set-output name=current_date::$(date +'%Y-%m-%d')"
+
+    - name: Commit and Push changes to metdata folder
+      run: |
+        git config --global user.name "metdata04"
+        git config --global user.email "metdata04@gmail.com"
+        git add metdata/*  # Add all files in the monthlydata folder
+        git commit -m "Add monthly climate update PDF - ${{ steps.date.outputs.current_date }}"
+        git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
